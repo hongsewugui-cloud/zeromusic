@@ -136,3 +136,5 @@ body.is-launching .app-shell { filter:blur(2px); transform:scale(1.01); transiti
 .recent-empty[hidden] { display:none; }
 .recent-empty b { font:900 20px var(--display); }.recent-empty small { color:var(--muted); font-size:12px; font-weight:700; }
 @media (max-width:760px) { .recent-track { grid-template-columns:56px minmax(0,1fr) auto; gap:9px; }.library-local-heading { align-items:start; } }
+.local-track-row.is-removing { pointer-events:none; animation:favorite-remove .18s ease-in both; }
+@keyframes favorite-remove { to { opacity:0; transform:translateX(-18px) scaleY(.72); } }
