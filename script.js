@@ -44,6 +44,11 @@ const localFavoritesList = document.querySelector('#local-favorites-list');
 const localCount = document.querySelector('#local-count');
 const localAllPanel = document.querySelector('[data-local-panel="all"]');
 const localFavoritesPanel = document.querySelector('[data-local-panel="favorites"]');
+const libraryLocalFavoritesList = document.querySelector('#library-local-favorites-list');
+const libraryLocalFavoritesPanel = document.querySelector('#library-local-favorites-panel');
+const recentList = document.querySelector('#recent-list');
+const recentEmpty = document.querySelector('#recent-empty');
+const heartButton = document.querySelector('#heart-button');
 let isPlaying = false;
 let elapsed = 48;
 let duration = 167;
@@ -54,6 +59,7 @@ let localTracks = [];
 let currentLocalTrackId = null;
 let currentLocalAudioUrl = null;
 let pendingLyricsTrackId = null;
+let recentHistory = [];
 
 document.body.classList.add('is-launching');
 window.setTimeout(() => {
@@ -154,6 +160,7 @@ function selectTrack(button) {
   if (color === 'black' || track === 'No Gloss') nowCover.classList.add('is-black');
   document.querySelectorAll('.track-row').forEach((item) => item.classList.toggle('current', item.dataset.track === track));
   document.querySelectorAll('.release-card').forEach((item) => item.classList.toggle('selected', item.dataset.track === track));
+  recordRecentTrack({ key: `catalog:${track}`, source: 'catalog', title: track, artist, duration: length, playedAt: Date.now() });
   updateProgress();
 }
 
@@ -278,13 +285,45 @@ function renderLocalRows(tracks, target) {
   }).join('');
 }
 
+function loadRecentHistory() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('zeromusic-recent-history') || '[]');
+    recentHistory = Array.isArray(saved) ? saved : [];
+  } catch {
+    recentHistory = [];
+  }
+}
+
+function formatRecentDate(timestamp) {
+  const date = new Date(timestamp);
+  const today = new Date();
+  const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const startYesterday = startToday - 86400000;
+  if (timestamp >= startToday) return '今天';
+  if (timestamp >= startYesterday) return '昨天';
+  return `${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function recordRecentTrack(entry) {
+  recentHistory = [entry, ...recentHistory.filter((item) => item.key !== entry.key)].slice(0, 50);
+  try { localStorage.setItem('zeromusic-recent-history', JSON.stringify(recentHistory)); } catch {}
+  renderRecentHistory();
+}
+
+function renderRecentHistory() {
+  recentList.innerHTML = recentHistory.map((item) => `<li><button class="recent-track" type="button" data-recent-key="${escapeMarkup(item.key)}"><b>${formatRecentDate(item.playedAt)}</b><span>${escapeMarkup(item.title)}<small>${escapeMarkup(item.artist)} · ${item.source === 'local' ? '本地音乐' : 'SUBZERO SELECTS'}</small></span><em>${escapeMarkup(item.duration || '00:00')}</em></button></li>`).join('');
+  recentEmpty.hidden = recentHistory.length > 0;
+}
+
 function renderLocalLibrary() {
   const favorites = localTracks.filter((track) => track.favorite);
   localCount.textContent = `THIS DEVICE / ${localTracks.length} TRACK${localTracks.length === 1 ? '' : 'S'}`;
   renderLocalRows(localTracks, localTrackList);
   renderLocalRows(favorites, localFavoritesList);
+  renderLocalRows(favorites, libraryLocalFavoritesList);
   localAllPanel.classList.toggle('has-tracks', localTracks.length > 0);
   localFavoritesPanel.classList.toggle('has-tracks', favorites.length > 0);
+  libraryLocalFavoritesPanel.classList.toggle('has-tracks', favorites.length > 0);
 }
 
 async function loadLocalLibrary() {
@@ -323,10 +362,12 @@ async function playLocalTrack(id) {
     nowFavorite.setAttribute('aria-pressed', String(track.favorite));
     nowFavorite.classList.toggle('active', track.favorite);
     nowFavorite.textContent = track.favorite ? '♥ 已收藏' : '♡ 收藏';
+    heartButton.textContent = track.favorite ? '♥' : '♡';
   }
   try {
     await localAudio.play();
     isPlaying = true;
+    recordRecentTrack({ key: `local:${track.id}`, source: 'local', id: track.id, title: track.title, artist: track.artist, duration: formatTime(track.duration || 0), playedAt: Date.now() });
     updatePlayButtons();
     renderLocalLibrary();
   } catch {
@@ -351,6 +392,7 @@ async function toggleLocalFavorite(id) {
     nowFavorite.setAttribute('aria-pressed', String(track.favorite));
     nowFavorite.classList.toggle('active', track.favorite);
     nowFavorite.textContent = track.favorite ? '♥ 已收藏' : '♡ 收藏';
+    heartButton.textContent = track.favorite ? '♥' : '♡';
   }
 }
 
@@ -379,6 +421,18 @@ function attachLocalLyrics(event) {
 
 localTrackList.addEventListener('click', attachLocalLyrics);
 localFavoritesList.addEventListener('click', attachLocalLyrics);
+libraryLocalFavoritesList.addEventListener('click', attachLocalLyrics);
+recentList.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-recent-key]');
+  if (!button) return;
+  const item = recentHistory.find((record) => record.key === button.dataset.recentKey);
+  if (!item) return;
+  if (item.source === 'local') playLocalTrack(item.id);
+  else {
+    const catalogButton = Array.from(trackButtons).find((trackButton) => trackButton.dataset.track === item.title);
+    if (catalogButton) { selectTrack(catalogButton); isPlaying = true; updatePlayButtons(); }
+  }
+});
 localLrcInput.addEventListener('change', async () => {
   const file = localLrcInput.files?.[0];
   const track = localTracks.find((item) => item.id === pendingLyricsTrackId);
@@ -430,7 +484,8 @@ document.querySelector('#bar-progress').addEventListener('click', (event) => {
   updateProgress();
 });
 
-document.querySelector('#heart-button').addEventListener('click', (event) => {
+heartButton.addEventListener('click', (event) => {
+  if (currentLocalTrackId) { toggleLocalFavorite(currentLocalTrackId); return; }
   event.currentTarget.classList.toggle('liked');
   event.currentTarget.textContent = event.currentTarget.classList.contains('liked') ? '♥' : '♡';
   event.currentTarget.classList.remove('heart-bloom');
@@ -611,4 +666,6 @@ setInterval(() => {
 }, 1000);
 
 updateProgress();
+loadRecentHistory();
+renderRecentHistory();
 loadLocalLibrary();
