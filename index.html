@@ -123,14 +123,11 @@
 
         <section class="view local-view" id="local-view" aria-labelledby="local-title">
           <div class="local-page">
-            <div class="local-heading"><div><p class="section-label">THIS DEVICE / 12 TRACKS</p><h1 id="local-title">本地歌曲</h1></div><span class="local-drive">D:\\MUSIC</span></div>
-            <div class="local-tabs" role="tablist" aria-label="本地歌曲分类"><button class="local-tab active" type="button" data-local-tab="all" aria-selected="true">全部本地</button><button class="local-tab" type="button" data-local-tab="downloaded" aria-selected="false">已下载歌曲</button></div>
-            <div class="local-grid local-panel active" data-local-panel="all">
-              <article><b>本地导入</b><strong>12</strong><small>首可播放歌曲</small></article>
-              <article><b>音频格式</b><strong>FLAC<br />MP3</strong><small>高品质文件优先</small></article>
-              <article><b>最近加入</b><strong>07.25</strong><small>同步完成</small></article>
-            </div>
-            <div class="downloaded-panel local-panel" data-local-panel="downloaded"><div><b>Concrete Teeth</b><small>CHANY / FLAC / 03:21</small><span>已下载</span></div><div><b>No Gloss</b><small>CHANY / MP3 / 02:59</small><span>已下载</span></div><div><b>重压之下</b><small>CHANY / FLAC / 03:46</small><span>已下载</span></div></div>
+            <div class="local-heading"><div><p class="section-label" id="local-count">THIS DEVICE / 0 TRACKS</p><h1 id="local-title">本地歌曲</h1></div><div class="local-import-actions"><button class="local-import-button" id="local-upload-button" type="button">+ 导入音频</button><input id="local-audio-input" type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,audio/flac,audio/*" multiple hidden /><input id="local-lrc-input" type="file" accept=".lrc,text/plain" hidden /></div></div>
+            <p class="local-privacy">音频与歌词只保存在此设备浏览器中，不会上传或分享。</p>
+            <div class="local-tabs" role="tablist" aria-label="本地歌曲分类"><button class="local-tab active" type="button" data-local-tab="all" aria-selected="true">全部本地</button><button class="local-tab" type="button" data-local-tab="favorites" aria-selected="false">已收藏</button></div>
+            <div class="local-library local-panel active" data-local-panel="all"><div class="local-empty" id="local-empty"><b>本地资料库为空</b><small>导入自己的音频后，可直接播放、收藏和添加 LRC 歌词。</small></div><ol class="local-track-list" id="local-track-list"></ol></div>
+            <div class="local-library local-panel" data-local-panel="favorites"><div class="local-empty" id="local-favorites-empty"><b>还没有收藏</b><small>在本地歌曲中点击收藏，歌曲会出现在这里。</small></div><ol class="local-track-list" id="local-favorites-list"></ol></div>
           </div>
         </section>
 
@@ -225,6 +222,7 @@
         </section>
       </div>
     </div>
+    <audio id="local-audio" preload="metadata"></audio>
     <script src="script.js"></script>
   </body>
 </html>
