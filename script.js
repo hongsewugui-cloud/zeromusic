@@ -37,8 +37,11 @@ const nowDownload = document.querySelector('#now-download');
 const splashScreen = document.querySelector('#splash-screen');
 const localAudio = document.querySelector('#local-audio');
 const localUploadButton = document.querySelector('#local-upload-button');
+const localUploadStage = document.querySelector('#local-upload-stage');
 const localAudioInput = document.querySelector('#local-audio-input');
 const localLrcInput = document.querySelector('#local-lrc-input');
+const localImportStatus = document.querySelector('#local-import-status');
+const localImportProgress = document.querySelector('#local-import-progress');
 const localTrackList = document.querySelector('#local-track-list');
 const localFavoritesList = document.querySelector('#local-favorites-list');
 const localCount = document.querySelector('#local-count');
@@ -60,6 +63,7 @@ let currentLocalTrackId = null;
 let currentLocalAudioUrl = null;
 let pendingLyricsTrackId = null;
 let recentHistory = [];
+let isImportingLocalFiles = false;
 
 document.body.classList.add('is-launching');
 window.setTimeout(() => {
@@ -401,17 +405,45 @@ async function toggleLocalFavorite(id) {
   }
 }
 
-localUploadButton.addEventListener('click', () => localAudioInput.click());
-localAudioInput.addEventListener('change', async () => {
-  const files = Array.from(localAudioInput.files || []).filter((file) => file.type.startsWith('audio/') || /\.(mp3|wav|m4a|flac)$/i.test(file.name));
-  for (const file of files) {
+function updateLocalImportProgress(progress, status) {
+  localImportProgress.style.width = `${progress}%`;
+  localImportStatus.textContent = status;
+}
+
+async function importLocalFiles(fileList) {
+  if (isImportingLocalFiles) return;
+  const files = Array.from(fileList || []).filter((file) => file.type.startsWith('audio/') || /\.(mp3|wav|m4a|flac)$/i.test(file.name));
+  if (!files.length) { updateLocalImportProgress(0, '未找到可导入的音频'); return; }
+  isImportingLocalFiles = true;
+  localUploadStage.classList.add('is-importing');
+  let added = 0;
+  let skipped = 0;
+  for (let index = 0; index < files.length; index += 1) {
+    const file = files[index];
+    const fingerprint = `${file.name}-${file.size}-${file.lastModified}`;
+    updateLocalImportProgress(Math.round((index / files.length) * 100), `正在导入 ${index + 1} / ${files.length}`);
+    if (localTracks.some((track) => track.fingerprint === fingerprint)) { skipped += 1; continue; }
     const metadata = parseLocalFileName(file.name);
-    const track = { id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`, title: metadata.title, artist: metadata.artist, format: (file.name.split('.').pop() || 'AUDIO').toUpperCase(), size: file.size, duration: await readAudioDuration(file), favorite: false, lyrics: '', addedAt: Date.now(), blob: file };
+    const track = { id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`, fingerprint, title: metadata.title, artist: metadata.artist, format: (file.name.split('.').pop() || 'AUDIO').toUpperCase(), size: file.size, duration: await readAudioDuration(file), favorite: false, lyrics: '', addedAt: Date.now(), blob: file };
     await writeLocalTrack(track);
     localTracks.unshift(track);
+    added += 1;
   }
-  localAudioInput.value = '';
   renderLocalLibrary();
+  updateLocalImportProgress(100, skipped ? `已导入 ${added} 首，跳过 ${skipped} 首重复文件` : `已导入 ${added} 首音频`);
+  window.setTimeout(() => { if (!isImportingLocalFiles) updateLocalImportProgress(0, 'MP3 / WAV / M4A / FLAC'); }, 2200);
+  isImportingLocalFiles = false;
+  localUploadStage.classList.remove('is-importing');
+}
+
+localUploadButton.addEventListener('click', () => localAudioInput.click());
+localUploadStage.addEventListener('click', () => localAudioInput.click());
+localUploadStage.addEventListener('dragover', (event) => { event.preventDefault(); localUploadStage.classList.add('is-dragging'); });
+localUploadStage.addEventListener('dragleave', () => localUploadStage.classList.remove('is-dragging'));
+localUploadStage.addEventListener('drop', (event) => { event.preventDefault(); localUploadStage.classList.remove('is-dragging'); importLocalFiles(event.dataTransfer?.files); });
+localAudioInput.addEventListener('change', async () => {
+  await importLocalFiles(localAudioInput.files);
+  localAudioInput.value = '';
 });
 
 function attachLocalLyrics(event) {
