@@ -55,7 +55,7 @@ const settingsPages = {
   about: { title: '关于 App', intro: 'zeromusic 是 SUBZERO 的线上声音频道，聚焦纯粹的音乐收听体验。', rows: [['版本', 'zeromusic v0.1.0', '已是最新'], ['厂牌', 'SUBZERO / 绝对零度', '官网'], ['成立地', '湖北省襄阳市', '信息'], ['服务条款', '阅读使用条款与隐私政策', '阅读']] },
   switch: { title: '切换账户', intro: '选择已有账户，或使用新的 zeromusic 账户登录。', rows: [['CHANY', '@tommy_rrrcnm / 当前账户', '当前'], ['添加账户', '使用其他邮箱或登录方式', '添加'], ['账户管理', '移除已保存的登录状态', '管理']] }
 };
-const labelWebsiteUrl = 'file:///C:/Users/86159/Documents/Codex/2026-07-23/wo/outputs/SUBZERO_website/index.html#field';
+const labelWebsiteUrl = 'https://hongsewugui-cloud.github.io/subzero-website/';
 
 function setView(view) {
   views.forEach((item) => item.classList.toggle('active', item.id === `${view}-view`));
