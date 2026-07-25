@@ -35,12 +35,25 @@ const localPanels = document.querySelectorAll('[data-local-panel]');
 const nowFavorite = document.querySelector('#now-favorite');
 const nowDownload = document.querySelector('#now-download');
 const splashScreen = document.querySelector('#splash-screen');
+const localAudio = document.querySelector('#local-audio');
+const localUploadButton = document.querySelector('#local-upload-button');
+const localAudioInput = document.querySelector('#local-audio-input');
+const localLrcInput = document.querySelector('#local-lrc-input');
+const localTrackList = document.querySelector('#local-track-list');
+const localFavoritesList = document.querySelector('#local-favorites-list');
+const localCount = document.querySelector('#local-count');
+const localAllPanel = document.querySelector('[data-local-panel="all"]');
+const localFavoritesPanel = document.querySelector('[data-local-panel="favorites"]');
 let isPlaying = false;
 let elapsed = 48;
 let duration = 167;
 let activeDetail = 'lyrics';
 let signedIn = true;
 let selectedQuality = '高品质 / 320 kbps';
+let localTracks = [];
+let currentLocalTrackId = null;
+let currentLocalAudioUrl = null;
+let pendingLyricsTrackId = null;
 
 document.body.classList.add('is-launching');
 window.setTimeout(() => {
@@ -118,12 +131,15 @@ function renderDetail(track) {
     detailPanel.innerHTML = `<dl class="credit-list"><div><dt>作词</dt><dd>Chany</dd></div><div><dt>作曲</dt><dd>Chany / SUBZERO</dd></div><div><dt>制作</dt><dd>SUBZERO ROOM</dd></div><div><dt>混音</dt><dd>ZERO ENGINEERING</dd></div></dl>`;
     return;
   }
-  const lines = lyricsByTrack[track] || lyricsByTrack['黑砧开炉'];
+  const localTrack = localTracks.find((item) => item.id === currentLocalTrackId);
+  const lines = localTrack?.lyrics ? localTrack.lyrics.split(/\r?\n/).filter(Boolean) : (lyricsByTrack[track] || ['本地音频正在播放', '可在本地资料库为这首歌添加 LRC 歌词', '音频与歌词不会离开此设备']);
   detailPanel.innerHTML = `<div class="lyrics-content" id="lyrics-content">${lines.map((line, index) => `<span class="${index === 1 ? 'current-line' : ''}">${line}</span>`).join('')}</div>`;
 }
 
 function selectTrack(button) {
   const { track, artist, length, color } = button.dataset;
+  if (currentLocalTrackId) localAudio.pause();
+  currentLocalTrackId = null;
   miniTitle.textContent = track;
   miniArtist.textContent = artist;
   nowTitle.textContent = track;
@@ -142,6 +158,12 @@ function selectTrack(button) {
 }
 
 function changeTrack(direction) {
+  if (currentLocalTrackId && localTracks.length) {
+    const currentIndex = localTracks.findIndex((item) => item.id === currentLocalTrackId);
+    const nextTrack = localTracks[(currentIndex + direction + localTracks.length) % localTracks.length];
+    playLocalTrack(nextTrack.id);
+    return;
+  }
   const tracks = Array.from(trackButtons);
   const currentIndex = tracks.findIndex((item) => item.dataset.track === nowTitle.textContent);
   const nextIndex = (currentIndex + direction + tracks.length) % tracks.length;
@@ -200,21 +222,211 @@ localTabs.forEach((tab) => tab.addEventListener('click', () => {
   });
   localPanels.forEach((panel) => panel.classList.toggle('active', panel.dataset.localPanel === selection));
 }));
+
+function openLocalMusicDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('zeromusic-local-library', 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains('tracks')) request.result.createObjectStore('tracks', { keyPath: 'id' });
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function writeLocalTrack(track) {
+  const db = await openLocalMusicDb();
+  await new Promise((resolve, reject) => {
+    const request = db.transaction('tracks', 'readwrite').objectStore('tracks').put(track);
+    request.onsuccess = resolve;
+    request.onerror = () => reject(request.error);
+  });
+  db.close();
+}
+
+function escapeMarkup(value) {
+  return String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+}
+
+function formatFileSize(bytes) {
+  return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+function parseLocalFileName(fileName) {
+  const baseName = fileName.replace(/\.[^.]+$/, '').trim();
+  const parts = baseName.split(/\s+-\s+/);
+  return parts.length > 1 ? { artist: parts.shift(), title: parts.join(' - ') } : { artist: '本地导入', title: baseName || '未命名音频' };
+}
+
+function readAudioDuration(file) {
+  return new Promise((resolve) => {
+    const probe = document.createElement('audio');
+    const url = URL.createObjectURL(file);
+    probe.preload = 'metadata';
+    probe.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(Number.isFinite(probe.duration) ? Math.round(probe.duration) : 0); };
+    probe.onerror = () => { URL.revokeObjectURL(url); resolve(0); };
+    probe.src = url;
+  });
+}
+
+function renderLocalRows(tracks, target) {
+  target.innerHTML = tracks.map((track) => {
+    const trackTitle = escapeMarkup(track.title);
+    const trackArtist = escapeMarkup(track.artist);
+    const detail = `${trackArtist} / ${escapeMarkup(track.format)} / ${formatTime(track.duration || 0)} / ${formatFileSize(track.size)}`;
+    return `<li class="local-track-row ${track.id === currentLocalTrackId ? 'is-current' : ''}" data-local-id="${track.id}"><button class="local-track-play" type="button" data-local-action="play" aria-label="播放 ${trackTitle}">${track.id === currentLocalTrackId && isPlaying ? 'Ⅱ' : '▶'}</button><span class="local-track-info"><b>${trackTitle}</b><small>${detail}</small></span><div class="local-track-actions"><button class="local-track-action ${track.favorite ? 'is-favorite' : ''}" type="button" data-local-action="favorite" aria-pressed="${track.favorite}" aria-label="收藏 ${trackTitle}">${track.favorite ? '♥' : '♡'}</button><button class="local-track-action" type="button" data-local-action="lyrics" aria-label="为 ${trackTitle} 添加本地歌词">LRC</button></div></li>`;
+  }).join('');
+}
+
+function renderLocalLibrary() {
+  const favorites = localTracks.filter((track) => track.favorite);
+  localCount.textContent = `THIS DEVICE / ${localTracks.length} TRACK${localTracks.length === 1 ? '' : 'S'}`;
+  renderLocalRows(localTracks, localTrackList);
+  renderLocalRows(favorites, localFavoritesList);
+  localAllPanel.classList.toggle('has-tracks', localTracks.length > 0);
+  localFavoritesPanel.classList.toggle('has-tracks', favorites.length > 0);
+}
+
+async function loadLocalLibrary() {
+  try {
+    const db = await openLocalMusicDb();
+    localTracks = await new Promise((resolve, reject) => {
+      const request = db.transaction('tracks', 'readonly').objectStore('tracks').getAll();
+      request.onsuccess = () => resolve(request.result.sort((a, b) => b.addedAt - a.addedAt));
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    renderLocalLibrary();
+  } catch {
+    localCount.textContent = 'THIS DEVICE / STORAGE UNAVAILABLE';
+  }
+}
+
+async function playLocalTrack(id) {
+  const track = localTracks.find((item) => item.id === id);
+  if (!track?.blob) return;
+  if (currentLocalTrackId !== id) {
+    if (currentLocalAudioUrl) URL.revokeObjectURL(currentLocalAudioUrl);
+    currentLocalAudioUrl = URL.createObjectURL(track.blob);
+    localAudio.src = currentLocalAudioUrl;
+    currentLocalTrackId = id;
+    miniTitle.textContent = track.title;
+    miniArtist.textContent = track.artist;
+    nowTitle.textContent = track.title;
+    coverWord.textContent = 'LOCAL';
+    miniCover.textContent = 'LO';
+    nowCover.classList.remove('is-yellow', 'is-black');
+    duration = track.duration || 0;
+    elapsed = 0;
+    trackLength.textContent = formatTime(duration);
+    renderDetail(track.title);
+    nowFavorite.setAttribute('aria-pressed', String(track.favorite));
+    nowFavorite.classList.toggle('active', track.favorite);
+    nowFavorite.textContent = track.favorite ? '♥ 已收藏' : '♡ 收藏';
+  }
+  try {
+    await localAudio.play();
+    isPlaying = true;
+    updatePlayButtons();
+    renderLocalLibrary();
+  } catch {
+    isPlaying = false;
+    updatePlayButtons();
+  }
+}
+
+async function toggleLocalPlayback() {
+  if (!currentLocalTrackId) return;
+  if (localAudio.paused) await playLocalTrack(currentLocalTrackId);
+  else localAudio.pause();
+}
+
+async function toggleLocalFavorite(id) {
+  const track = localTracks.find((item) => item.id === id);
+  if (!track) return;
+  track.favorite = !track.favorite;
+  await writeLocalTrack(track);
+  renderLocalLibrary();
+  if (id === currentLocalTrackId) {
+    nowFavorite.setAttribute('aria-pressed', String(track.favorite));
+    nowFavorite.classList.toggle('active', track.favorite);
+    nowFavorite.textContent = track.favorite ? '♥ 已收藏' : '♡ 收藏';
+  }
+}
+
+localUploadButton.addEventListener('click', () => localAudioInput.click());
+localAudioInput.addEventListener('change', async () => {
+  const files = Array.from(localAudioInput.files || []).filter((file) => file.type.startsWith('audio/') || /\.(mp3|wav|m4a|flac)$/i.test(file.name));
+  for (const file of files) {
+    const metadata = parseLocalFileName(file.name);
+    const track = { id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`, title: metadata.title, artist: metadata.artist, format: (file.name.split('.').pop() || 'AUDIO').toUpperCase(), size: file.size, duration: await readAudioDuration(file), favorite: false, lyrics: '', addedAt: Date.now(), blob: file };
+    await writeLocalTrack(track);
+    localTracks.unshift(track);
+  }
+  localAudioInput.value = '';
+  renderLocalLibrary();
+});
+
+function attachLocalLyrics(event) {
+  const action = event.target.closest('[data-local-action]');
+  if (!action) return;
+  const trackId = event.target.closest('[data-local-id]')?.dataset.localId;
+  if (!trackId) return;
+  if (action.dataset.localAction === 'play') playLocalTrack(trackId);
+  if (action.dataset.localAction === 'favorite') toggleLocalFavorite(trackId);
+  if (action.dataset.localAction === 'lyrics') { pendingLyricsTrackId = trackId; localLrcInput.click(); }
+}
+
+localTrackList.addEventListener('click', attachLocalLyrics);
+localFavoritesList.addEventListener('click', attachLocalLyrics);
+localLrcInput.addEventListener('change', async () => {
+  const file = localLrcInput.files?.[0];
+  const track = localTracks.find((item) => item.id === pendingLyricsTrackId);
+  if (!file || !track) return;
+  track.lyrics = await file.text();
+  await writeLocalTrack(track);
+  if (track.id === currentLocalTrackId) renderDetail(track.title);
+  localLrcInput.value = '';
+  pendingLyricsTrackId = null;
+  renderLocalLibrary();
+});
+
+localAudio.addEventListener('loadedmetadata', () => {
+  duration = Math.round(localAudio.duration || duration || 0);
+  elapsed = 0;
+  trackLength.textContent = formatTime(duration);
+  updateProgress();
+});
+localAudio.addEventListener('timeupdate', () => {
+  if (!currentLocalTrackId) return;
+  elapsed = Math.floor(localAudio.currentTime || 0);
+  duration = Math.round(localAudio.duration || duration || 0);
+  updateProgress();
+});
+localAudio.addEventListener('pause', () => { if (currentLocalTrackId) { isPlaying = false; updatePlayButtons(); renderLocalLibrary(); } });
+localAudio.addEventListener('play', () => { if (currentLocalTrackId) { isPlaying = true; updatePlayButtons(); renderLocalLibrary(); } });
+localAudio.addEventListener('ended', () => { isPlaying = false; updatePlayButtons(); renderLocalLibrary(); });
 miniCover.addEventListener('click', () => setView('now-playing'));
 trackButtons.forEach((item) => item.addEventListener('click', () => { selectTrack(item); isPlaying = true; updatePlayButtons(); }));
 document.querySelectorAll('[aria-label="上一首"]').forEach((button) => button.addEventListener('click', () => changeTrack(-1)));
 document.querySelectorAll('[aria-label="下一首"]').forEach((button) => button.addEventListener('click', () => changeTrack(1)));
-playButtons.forEach((button) => button.addEventListener('click', () => { isPlaying = !isPlaying; updatePlayButtons(); }));
+playButtons.forEach((button) => button.addEventListener('click', () => {
+  if (currentLocalTrackId) { toggleLocalPlayback(); return; }
+  isPlaying = !isPlaying;
+  updatePlayButtons();
+}));
 
 document.querySelector('#progress-button').addEventListener('click', (event) => {
   const rect = event.currentTarget.getBoundingClientRect();
   elapsed = Math.round(((event.clientX - rect.left) / rect.width) * duration);
+  if (currentLocalTrackId) localAudio.currentTime = elapsed;
   updateProgress();
 });
 
 document.querySelector('#bar-progress').addEventListener('click', (event) => {
   const rect = event.currentTarget.getBoundingClientRect();
   elapsed = Math.round(((event.clientX - rect.left) / rect.width) * duration);
+  if (currentLocalTrackId) localAudio.currentTime = elapsed;
   updateProgress();
 });
 
@@ -236,7 +448,10 @@ function togglePlayerAction(button, activeText, idleText) {
   button.classList.add('action-pop');
 }
 
-nowFavorite.addEventListener('click', () => togglePlayerAction(nowFavorite, '♥ 已收藏', '♡ 收藏'));
+nowFavorite.addEventListener('click', () => {
+  if (currentLocalTrackId) { toggleLocalFavorite(currentLocalTrackId); return; }
+  togglePlayerAction(nowFavorite, '♥ 已收藏', '♡ 收藏');
+});
 nowDownload.addEventListener('click', () => togglePlayerAction(nowDownload, '✓ 已下载', '↓ 下载'));
 
 document.querySelectorAll('.detail-tab').forEach((tab) => tab.addEventListener('click', () => {
@@ -390,9 +605,10 @@ document.addEventListener('click', (event) => {
 });
 
 setInterval(() => {
-  if (!isPlaying) return;
+  if (!isPlaying || currentLocalTrackId) return;
   elapsed = elapsed >= duration ? 0 : elapsed + 1;
   updateProgress();
 }, 1000);
 
 updateProgress();
+loadLocalLibrary();
