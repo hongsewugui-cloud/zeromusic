@@ -385,6 +385,11 @@ async function toggleLocalPlayback() {
 async function toggleLocalFavorite(id) {
   const track = localTracks.find((item) => item.id === id);
   if (!track) return;
+  if (track.favorite) {
+    const favoriteRows = Array.from(document.querySelectorAll('.local-track-row[data-local-id]')).filter((row) => row.dataset.localId === id);
+    favoriteRows.forEach((row) => row.classList.add('is-removing'));
+    if (favoriteRows.length) await new Promise((resolve) => window.setTimeout(resolve, 180));
+  }
   track.favorite = !track.favorite;
   await writeLocalTrack(track);
   renderLocalLibrary();
