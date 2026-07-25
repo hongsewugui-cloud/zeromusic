@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="zeromusic desktop music player concept" />
+    <title>zeromusic</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="app-brand" href="#home" data-view="home" aria-label="zeromusic 首页">
+          <span class="brand-zero">0</span><span>zero<br />music</span>
+        </a>
+
+        <nav class="main-nav" aria-label="主导航">
+          <button class="nav-item active" type="button" data-view="home" draggable="true"><span>01</span> 发现</button>
+          <button class="nav-item" type="button" data-view="library" draggable="true"><span>02</span> 我的收藏</button>
+          <button class="nav-item" type="button" data-view="local" draggable="true"><span>03</span> 本地歌曲</button>
+          <button class="nav-item" type="button" data-view="recent" draggable="true"><span>04</span> 最近播放</button>
+          <button class="nav-item" type="button" data-view="now-playing" draggable="true"><span>05</span> 正在播放</button>
+          <button class="nav-item" type="button" data-view="settings" draggable="true"><span>06</span> 系统设置</button>
+        </nav>
+
+        <div class="side-foot">
+          <span class="online-dot"></span> ONLINE<br />XIANGYANG / CN
+        </div>
+      </aside>
+
+      <main class="app-main">
+        <header class="topbar">
+          <div class="topbar-utility">
+            <div class="search-area">
+              <label class="search-wrap">
+                <span>⌕</span>
+                <input id="search-input" type="search" placeholder="搜索歌曲、艺人、歌单" />
+              </label>
+              <section class="search-history" id="search-history" aria-label="搜索记录" aria-hidden="true">
+                <div class="search-history-head"><b>搜索记录</b><button type="button" id="clear-search-history">清除</button></div>
+                <div class="search-records" id="search-records">
+                  <button class="search-record" type="button" data-query="黑砧开炉"><span>↗</span>黑砧开炉</button>
+                  <button class="search-record" type="button" data-query="Chany"><span>↗</span>Chany</button>
+                  <button class="search-record" type="button" data-query="重压之下"><span>↗</span>重压之下</button>
+                  <button class="search-record" type="button" data-query="Concrete Teeth"><span>↗</span>Concrete Teeth</button>
+                  <button class="search-record" type="button" data-query="No Gloss"><span>↗</span>No Gloss</button>
+                  <button class="search-record extra-search-record" type="button" data-query="No Retreat"><span>↗</span>No Retreat</button>
+                  <button class="search-record extra-search-record" type="button" data-query="SUBZERO SELECTS"><span>↗</span>SUBZERO SELECTS</button>
+                </div>
+                <button class="all-records-toggle" id="all-records-toggle" type="button">全部记录 <span>↓</span></button>
+              </section>
+            </div>
+          </div>
+          <button class="account-trigger" id="account-trigger" type="button" aria-expanded="false" aria-controls="account-panel">
+            <span class="account-mark">C</span>
+            <span><b>CHANY</b><small>账户中心</small></span>
+            <i aria-hidden="true">+</i>
+          </button>
+        </header>
+
+        <section class="view home-view active" id="home-view" aria-labelledby="home-title">
+          <div class="hero-row">
+            <div class="home-title-block">
+              <p class="section-label">SUBZERO RADIO / 001</p>
+              <h1 id="home-title">把音量<br />推到极限。</h1>
+              <p class="home-subtitle">zeromusic 是 SUBZERO 的线上声音频道。</p>
+              <div class="hero-actions">
+                <button class="primary-button play-current" type="button"><span class="play-glyph">▶</span> 播放精选</button>
+                <button class="outline-button" type="button" data-view="library">查看我的收藏 <span>→</span></button>
+              </div>
+              <div class="discovery-accordion" aria-label="音乐发现分类">
+                <section class="discovery-accordion-item">
+                  <button class="discovery-accordion-trigger" type="button" data-discovery="style" aria-expanded="false">音乐风格 <span>+</span></button>
+                  <div class="discovery-accordion-panel" data-discovery-panel="style"><span>Hip-Hop</span><span>R&amp;B</span><span>Electronic</span><span>Rock</span><span>Jazz</span><span>Classical</span></div>
+                </section>
+                <section class="discovery-accordion-item">
+                  <button class="discovery-accordion-trigger" type="button" data-discovery="region" aria-expanded="false">地区 <span>+</span></button>
+                  <div class="discovery-accordion-panel" data-discovery-panel="region"><span>华语</span><span>日韩</span><span>欧美</span><span>拉丁</span><span>非洲</span><span>全球独立</span></div>
+                </section>
+                <section class="discovery-accordion-item">
+                  <button class="discovery-accordion-trigger" type="button" data-discovery="featured" aria-expanded="false">精选推荐 <span>+</span></button>
+                  <div class="discovery-accordion-panel" data-discovery-panel="featured"><span>新发行</span><span>热门上升</span><span>编辑精选</span><span>场景歌单</span></div>
+                </section>
+              </div>
+            </div>
+            <div class="hero-art" aria-label="SUBZERO RADIO 封面">
+              <div class="art-sticker">NO HEAT<br />JUST TRUTH</div>
+              <img src="assets/subzero-logo.png" alt="SUBZERO 标志" />
+              <span class="art-corner top">Z-M / 001</span>
+              <span class="art-corner bottom">HARDCORE / BOOM BAP</span>
+            </div>
+          </div>
+
+        </section>
+
+        <section class="view library-view" id="library-view" aria-labelledby="library-title">
+          <div class="library-topline">
+            <div>
+              <p class="section-label">YOUR COLLECTION</p>
+              <h1 id="library-title">我的收藏</h1>
+            </div>
+            <button class="primary-button play-current" type="button"><span class="play-glyph">▶</span> 全部播放</button>
+          </div>
+          <div class="library-layout">
+            <section class="track-table-wrap">
+              <div class="track-table-head"><span>#</span><span>标题</span><span>专辑</span><span>时长</span></div>
+              <div class="track-table" id="track-table">
+                <button class="track-row current" type="button" data-track="黑砧开炉" data-artist="Chany" data-length="02:47"><span>01</span><span><b>黑砧开炉</b><small>Chany</small></span><span>重压之下</span><span>02:47</span></button>
+                <button class="track-row" type="button" data-track="No Gloss" data-artist="Chany" data-length="02:59"><span>02</span><span><b>No Gloss</b><small>Chany</small></span><span>重压之下</span><span>02:59</span></button>
+                <button class="track-row" type="button" data-track="Concrete Teeth" data-artist="Chany" data-length="03:21"><span>03</span><span><b>Concrete Teeth</b><small>Chany</small></span><span>重压之下</span><span>03:21</span></button>
+                <button class="track-row" type="button" data-track="重压之下" data-artist="Chany" data-length="03:46"><span>04</span><span><b>重压之下</b><small>Chany</small></span><span>重压之下</span><span>03:46</span></button>
+                <button class="track-row" type="button" data-track="No Retreat" data-artist="Chany" data-length="02:34"><span>05</span><span><b>No Retreat</b><small>Chany</small></span><span>SUBZERO SELECTS</span><span>02:34</span></button>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view local-view" id="local-view" aria-labelledby="local-title">
+          <div class="local-page">
+            <div class="local-heading"><div><p class="section-label">THIS DEVICE / 12 TRACKS</p><h1 id="local-title">本地歌曲</h1></div><span class="local-drive">D:\\MUSIC</span></div>
+            <div class="local-tabs" role="tablist" aria-label="本地歌曲分类"><button class="local-tab active" type="button" data-local-tab="all" aria-selected="true">全部本地</button><button class="local-tab" type="button" data-local-tab="downloaded" aria-selected="false">已下载歌曲</button></div>
+            <div class="local-grid local-panel active" data-local-panel="all">
+              <article><b>本地导入</b><strong>12</strong><small>首可播放歌曲</small></article>
+              <article><b>音频格式</b><strong>FLAC<br />MP3</strong><small>高品质文件优先</small></article>
+              <article><b>最近加入</b><strong>07.25</strong><small>同步完成</small></article>
+            </div>
+            <div class="downloaded-panel local-panel" data-local-panel="downloaded"><div><b>Concrete Teeth</b><small>CHANY / FLAC / 03:21</small><span>已下载</span></div><div><b>No Gloss</b><small>CHANY / MP3 / 02:59</small><span>已下载</span></div><div><b>重压之下</b><small>CHANY / FLAC / 03:46</small><span>已下载</span></div></div>
+          </div>
+        </section>
+
+        <section class="view recent-view" id="recent-view" aria-labelledby="recent-title">
+          <div class="recent-page">
+            <div class="recent-heading"><div><p class="section-label">LISTENING HISTORY</p><h1 id="recent-title">最近播放</h1></div><span>过去 7 天</span></div>
+            <ol class="recent-list"><li><b>今天</b><span>Concrete Teeth<small>CHANY · 重压之下</small></span><em>03:21</em></li><li><b>昨天</b><span>No Gloss<small>CHANY · 重压之下</small></span><em>02:59</em></li><li><b>07.22</b><span>黑砧开炉<small>CHANY · 重压之下</small></span><em>02:47</em></li><li><b>07.20</b><span>No Retreat<small>CHANY · SUBZERO SELECTS</small></span><em>02:34</em></li></ol>
+          </div>
+        </section>
+
+        <section class="view playing-view" id="now-playing-view" aria-labelledby="playing-title">
+          <div class="playing-main">
+            <div class="playing-poster" id="now-cover" aria-label="当前歌曲海报"><span>01</span><img class="record-label-logo" src="assets/subzero-logo.png" alt="SUBZERO 标志" /><strong id="cover-word">重压<br />之下</strong><em>SUBZERO</em></div>
+            <div class="playing-copy">
+              <div class="track-heading">
+                <h1><span id="playing-title">黑砧开炉</span></h1>
+                <p class="artist-line">专辑：重压之下 <span>·</span> 歌手：Chany</p>
+              </div>
+              <div class="detail-tabs" role="tablist" aria-label="歌曲信息">
+                <button class="detail-tab active" type="button" data-detail="lyrics" role="tab" aria-selected="true">歌词</button>
+                <button class="detail-tab" type="button" data-detail="credits" role="tab" aria-selected="false">制作</button>
+              </div>
+              <div class="lyrics-panel" id="detail-panel" aria-label="当前歌词">
+                <div class="lyrics-content" id="lyrics-content">
+                  <span>黑砧开炉，火星穿过黑夜</span>
+                  <span class="current-line">每一个字，都压在鼓点上面</span>
+                  <span>把温度降到零度以下</span>
+                  <span>真话从不需要谁来加冕</span>
+                </div>
+              </div>
+              <div class="playing-meta">
+                <div class="large-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="large-progress"><span id="elapsed-time">00:48</span><button class="progress-track" id="progress-button" type="button" aria-label="跳转播放进度"><i id="progress-fill"></i></button><span id="track-length">02:47</span></div>
+                <div class="player-control-row">
+                  <div class="player-actions"><button class="player-action" id="now-favorite" type="button" aria-pressed="false">♡ 收藏</button><button class="player-action" id="now-download" type="button" aria-pressed="false">↓ 下载</button></div>
+                  <div class="player-controls">
+                  <button class="control-button" type="button" aria-label="随机播放">⌁</button>
+                  <button class="control-button skip-button" type="button" aria-label="上一首">|◀</button>
+                  <button class="main-play play-current" type="button" aria-label="播放">▶</button>
+                  <button class="control-button skip-button" type="button" aria-label="下一首">▶|</button>
+                  <button class="control-button" type="button" aria-label="循环播放">↻</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view settings-view" id="settings-view" aria-labelledby="settings-title">
+          <div class="settings-panel">
+            <p class="section-label">ZEROMUSIC / SYSTEM</p>
+            <h1 id="settings-title">系统设置</h1>
+            <div class="settings-list" aria-label="设置选项">
+              <button class="setting-row" type="button" data-setting="account"><span><b>账号与安全</b><small>登录方式、密码与设备管理</small></span><i>→</i></button>
+              <button class="setting-row" type="button" data-setting="general"><span><b>通用</b><small>播放、缓存与交互动效</small></span><i>→</i></button>
+              <button class="setting-row" type="button" data-setting="privacy"><span><b>隐私与权限</b><small>个人资料、通知与设备权限</small></span><i>→</i></button>
+              <button class="setting-row" type="button" data-setting="about"><span><b>关于 App</b><small>zeromusic / SUBZERO 线上声音频道</small></span><i>→</i></button>
+              <button class="setting-row" type="button" data-setting="switch"><span><b>切换账户</b><small>使用其他 zeromusic 账户</small></span><i>↗</i></button>
+              <button class="setting-row logout-row" type="button" data-setting="session"><span><b>登录 / 登出</b><small>管理当前账户状态</small></span><i>↗</i></button>
+            </div>
+            <p class="settings-feedback" id="settings-feedback">选择一项设置以继续。</p>
+          </div>
+        </section>
+
+        <section class="view settings-detail-view" id="settings-detail-view" aria-labelledby="settings-detail-title">
+          <div class="settings-detail-panel">
+            <button class="settings-back" id="settings-back" type="button"><span>←</span> 返回系统设置</button>
+            <p class="section-label">ZEROMUSIC / SETTINGS</p>
+            <h1 id="settings-detail-title">账号与安全</h1>
+            <p class="settings-detail-intro" id="settings-detail-intro"></p>
+            <div class="settings-detail-list" id="settings-detail-list"></div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="player-bar">
+        <button class="bar-progress" id="bar-progress" type="button" aria-label="跳转播放进度"><i id="bar-progress-fill"></i></button>
+        <div class="mini-track"><button class="mini-cover" id="mini-cover" type="button" aria-label="打开正在播放">01</button><div><b id="mini-title">黑砧开炉</b><span id="mini-artist">Chany</span></div><button class="heart-button" id="heart-button" type="button" aria-label="收藏歌曲">♡</button></div>
+        <div class="bar-controls"><button class="bar-skip" type="button" aria-label="上一首">|◀</button><button class="bar-play play-current" type="button" aria-label="播放">▶</button><button class="bar-skip" type="button" aria-label="下一首">▶|</button></div>
+        <div class="bar-right"><span class="sound-level">▂▃▅▆</span><button class="volume-button" type="button" aria-label="静音">◖</button><span class="mini-progress"><i id="mini-progress-fill"></i></span></div>
+      </footer>
+      <div class="account-overlay" id="account-panel" aria-hidden="true">
+        <section class="profile-panel" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+          <button class="profile-close" id="profile-close" type="button" aria-label="关闭账户面板">×</button>
+          <div class="profile-head"><span class="profile-avatar">C</span><div><h2 id="profile-title">CHANY</h2><p>@tommy_rrrcnm</p></div></div>
+          <div class="profile-actions">
+            <button type="button" data-view="settings">系统设置 <span>→</span></button>
+            <button type="button" data-account-action="switch">切换账户 <span>↗</span></button>
+            <button type="button" class="profile-logout" id="session-action" data-account-action="session">退出登录 <span>↗</span></button>
+          </div>
+          <p class="profile-status" id="profile-status">已登录 / SUBZERO MEMBER</p>
+        </section>
+      </div>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
