@@ -34,12 +34,19 @@ const localTabs = document.querySelectorAll('[data-local-tab]');
 const localPanels = document.querySelectorAll('[data-local-panel]');
 const nowFavorite = document.querySelector('#now-favorite');
 const nowDownload = document.querySelector('#now-download');
+const splashScreen = document.querySelector('#splash-screen');
 let isPlaying = false;
 let elapsed = 48;
 let duration = 167;
 let activeDetail = 'lyrics';
 let signedIn = true;
 let selectedQuality = '高品质 / 320 kbps';
+
+document.body.classList.add('is-launching');
+window.setTimeout(() => {
+  splashScreen?.remove();
+  document.body.classList.remove('is-launching');
+}, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 80 : 2550);
 const lyricsByTrack = {
   '黑砧开炉': ['黑砧开炉，火星穿过黑夜', '每一个字，都压在鼓点上面', '把温度降到零度以下', '真话从不需要谁来加冕'],
   'No Gloss': ['没有滤镜，没有包装的色泽', '留在噪点里，才是我的规则', 'No gloss，别拿光来折射', '真实的裂缝比金属更热烈'],
